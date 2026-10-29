@@ -1,113 +1,163 @@
 # Merce Italiana — Private-Code Case Study
 
-> **Private project, public case study.** The application's source repository is private. This repository documents the product, architecture, workflows, and technologies at a non-sensitive level. No application source code, credentials, internal configuration, or real customer or business data is published here.
+> **Private project, public case study.** The application's source repository is private. This page explains the product, architecture, workflows, and selected file/class names at a non-sensitive level. It contains no application source code, credentials, internal configuration, or real customer or business data.
 
-## At a glance
+## Project summary
 
 Merce Italiana is a clothing-retail platform with two connected experiences: a customer storefront and a staff application. Both use a shared backend for product, inventory, customer, and order workflows.
 
 **My role:** Full-stack developer  
-**Application shape:** React customer and staff apps → Spring Boot REST API → PostgreSQL  
-**Project status:** Active development; production configuration and full test verification are still in progress.
+**Application:** React storefront and staff app → Spring Boot API → PostgreSQL  
+**Status:** Active development; production configuration and full test verification are still in progress.
 
-## The problem it addresses
+## Why I built it
 
-A clothing business needs to present products to customers while keeping its internal operations organized. Product availability, customer orders, staff access, and operational reporting are related, but each audience needs a different interface.
+A clothing business needs a customer shopping experience and a way for staff to manage the work behind it. Merce Italiana separates those interfaces while connecting catalog, inventory, customer, and order workflows through a shared backend.
 
-Merce Italiana separates the customer shopping experience from staff operations while connecting both to shared backend data and business workflows.
+## Who uses it
 
-## People and access
+- **Customers** browse the catalog, manage a cart, and submit orders through the storefront.
+- **Staff** work with products, stock, customers, orders, and operational views through the staff app.
+- **Managers** access additional administrative and reporting features when their role allows it.
 
-- **Customers** use the storefront to browse the catalog, manage a cart, and place orders.
-- **Staff members** use the staff application for product and inventory operations, customer and order workflows, and operational information.
-- **Users with elevated permissions** access management and reporting capabilities allowed by their assigned roles and permissions.
+The backend checks permissions for protected staff actions. This case study does not publish the private permission matrix or business-specific policies.
 
-JWT-based authentication and backend role/permission checks protect staff capabilities. The exact permission matrix and business-specific policies are private.
+## How an order moves through the app
 
-## End-to-end workflows
+1. A customer browses products in the storefront and builds a cart.
+2. The storefront sends the order request to the shared backend.
+3. The backend validates the request and checks current stock during checkout.
+4. The order workflow records the order and related inventory movement.
+5. Staff review and process the order from the staff application.
+6. Cash payment status is updated through a permission-controlled workflow.
+7. The backend returns the updated order state to the relevant application.
+8. Staff can use operational views, reports, receipts, and notifications to follow store activity.
 
-### Customer order flow
+## How the parts connect
 
-1. **Browse products.** A customer views the catalog in the React storefront.
-2. **Build a cart.** The customer selects products and reviews the cart in the storefront.
-3. **Submit an order.** The frontend sends the required request to the Spring Boot API. The backend validates the request and applies the order workflow.
-4. **Track the order state.** The API returns order information that the client can display. Staff can access the corresponding order workflow in the staff application.
-5. **Handle payment status.** The project includes cash-based payment status handling. The status is managed through backend workflows rather than treated as a completed online payment.
-6. **Update inventory.** Order processing includes inventory updates so that stock data remains connected to order activity.
-7. **Review operations.** Staff use operational views and reports to follow products, inventory, customers, orders, and notifications.
-
-### Staff product and inventory flow
-
-1. A staff member signs into the staff application.
-2. The frontend requests data and actions from the REST API.
-3. The backend authenticates the user and checks the relevant role and permission.
-4. Authorized product or inventory changes are validated and persisted.
-5. Updated information is returned to the staff interface and is available to related workflows.
-
-These descriptions summarize the project at a high level. They do not publish private business rules, endpoint details, or real store data.
-
-## System overview
-
-```text
-Customer ──► React storefront ──┐
-                                │
-Staff ─────► React staff app ───┼──► Spring Boot REST API
-                                │     Security · roles/permissions
-                                │     Orders · inventory · reporting
-                                │            │
-                                └────────────┘
-                                             ▼
-                              PostgreSQL · JPA · Flyway
-                              H2 for local/test scenarios
+```mermaid
+flowchart LR
+  Customer[Customer] --> Store[React storefront]
+  Staff[Staff member] --> Admin[React staff app]
+  Store --> API[Spring Boot API]
+  Admin --> API
+  API --> Auth[Authentication and permission checks]
+  API --> Controllers[Business controllers]
+  Controllers --> Services[Application services]
+  Services --> Repositories[Data repositories]
+  Repositories --> DB[(PostgreSQL)]
+  DB -. local and test scenarios .-> H2[(H2)]
+  API --> Events[Notifications and live updates]
 ```
 
-The customer and staff applications are distinct frontends with different responsibilities. They share backend capabilities and persisted business data through the API. The backend uses data-transfer objects to define API-facing data and applies access checks to protected operations.
+The storefront and staff app have different audiences but share backend capabilities. Controllers receive requests, services apply business rules, repositories handle persistence, and DTOs define the data returned to the frontends.
 
-## Architecture and engineering
+## Selected files and classes
 
-### Customer and staff frontends
+The map below shows representative names documented in the private project and their broad responsibilities. It does not reproduce the source tree or implementation.
 
-Both frontends use React and Vite. Tailwind CSS supports styling. Axios handles API communication, while TanStack Query supports client-side retrieval and synchronization of server data.
+### Main folders and files
+
+| Name | Purpose |
+|---|---|
+| `merce-italiana-backend/` | Spring Boot API and backend workflows |
+| `merce-italiana-frontend/` | Staff-facing React application |
+| `merce-italiana-storefront/` | Customer-facing React application |
+| `MerceItalianaApplication.java` | Starts the Spring Boot application. |
+| `src/main.jsx` | Boots a React frontend. |
+| `src/App.jsx` | Composes frontend routes and views. |
+| `src/index.css` | Shared frontend styles. |
+| `vite.config.js` | Frontend build and development configuration. |
+
+### Backend controllers
+
+| Class | Role |
+|---|---|
+| `AuthController` | Sign-in and account-access workflows. |
+| `ProductController` | Product catalog and inventory requests. |
+| `CustomerController` | Customer records and lookup. |
+| `OrderController` | Order creation and staff order operations. |
+| `CartController` | Cart updates and checkout requests. |
+| `PaymentController` | Cash payment status workflow. |
+| `DashboardController` | Permission-aware dashboard data. |
+| `ReportController` | Operational and performance reports. |
+| `NotificationController` | Staff notification history and read state. |
+| `AuditController` | Read and export access to audit records. |
+| `CouponController` | Coupon validation and management. |
+| `SettingsController` | Store settings and backup operations. |
 
 ### Backend services
 
-The Java backend uses Spring Boot to provide REST APIs and application workflows. Spring Security handles protected access. Spring Data JPA connects workflows to relational persistence. WebSocket support is included for notification-related capabilities.
+| Class | Role |
+|---|---|
+| `AuthService` | Account access and authentication workflows. |
+| `ProductService` | Product and catalog behavior. |
+| `StockMovementService` | Inventory movement history. |
+| `OrderService` | Order lifecycle and related stock changes. |
+| `CartService` | Cart lifecycle and checkout coordination. |
+| `PaymentService` | Cash payment status handling. |
+| `CustomerService` | Customer lookup and management. |
+| `DashboardService` | Dashboard data filtered by permissions. |
+| `ReportService` | Summary and operational report data. |
+| `NotificationService` | Persisted and live staff notifications. |
+| `AuditService` | Audit event recording and queries. |
+| `CouponService` | Coupon rules and redemption behavior. |
+| `ReceiptService` | Receipt generation. |
+| `BackupService` | Backup workflow and history. |
 
-### Persistence and migrations
+### Data and persistence classes
 
-PostgreSQL is the primary relational database. Flyway migrations version schema changes. H2 supports local and test scenarios. This separation lets the application exercise database-backed workflows without publishing production data or configuration.
+| Class | Role |
+|---|---|
+| `User` | Staff account and identity. |
+| `Role` | Named access role. |
+| `Permission` | Named capability used for access decisions. |
+| `Product` | Catalog item and stock-related data. |
+| `Category` | Product grouping. |
+| `StockMovement` | A recorded stock change. |
+| `Customer` | Customer record. |
+| `Order` | Customer order and lifecycle state. |
+| `Cart` | Customer cart and its lifecycle. |
+| `CartItem` | Product and quantity in a cart. |
+| `Coupon` | Discount rule and current status. |
+| `AuditLog` | Recorded operational action. |
+| `Settings` | Store-level settings. |
+| `BackupRecord` | Backup history entry. |
 
-### Authentication and authorization
+### Supporting file groups
 
-JWT supports authenticated requests. Backend roles and permissions govern access to staff operations. The authorization checks live in the server-side layer, which is the authoritative boundary for protected actions.
+| Name | Role |
+|---|---|
+| `SecurityConfig` | Configures protected backend access. |
+| `JwtService` | Supports token-based authentication. |
+| `GlobalExceptionHandler` | Returns consistent error responses. |
+| `WebSocketConfig` | Sets up live notification transport. |
+| `UserRepository`, `RoleRepository`, `PermissionRepository` | Persist account and access data. |
+| `ProductRepository`, `CategoryRepository`, `StockMovementRepository` | Persist catalog and stock data. |
+| `CustomerRepository`, `OrderRepository` | Persist customer and order data. |
+| `CartRepository`, `CartItemRepository` | Persist carts and their items. |
+| `CouponRepository`, `AuditLogRepository` | Persist coupon and audit records. |
+| `dto/` | Groups request and response models used at the API boundary. |
+| `db/migration/` | Versioned database schema changes managed by Flyway. |
 
-### Build, quality, and delivery
+## Engineering notes
 
-The backend uses the Maven Wrapper; frontend dependencies and scripts use npm. Git supports source control. Automated tests are part of the project, but full test verification remains in progress. Production deployment configuration is also not yet complete.
-
-## My contribution
-
-As the full-stack developer, I work across the React applications and Spring Boot API, connecting customer and staff workflows to shared business data. The project covers frontend integration, backend/API behavior, relational data and migrations, authentication and authorization, and testing.
-
-## Technology
-
-- **Languages:** Java, JavaScript, SQL, HTML, CSS
-- **Frontend:** React, Vite, Tailwind CSS, Axios, TanStack Query
-- **Backend:** Spring Boot, Spring Security, Spring Data JPA
-- **API and live updates:** REST APIs, WebSocket
-- **Authentication and access:** JWT, roles, permissions
-- **Database:** PostgreSQL; H2 for local/test scenarios
-- **Schema management:** Flyway
-- **Build and collaboration:** Maven Wrapper, npm, Git, automated tests
+- **Languages:** Java, JavaScript, SQL, HTML, CSS.
+- **Frontend:** React, Vite, Tailwind CSS, Axios, TanStack Query.
+- **Backend:** Spring Boot, Spring Security, Spring Data JPA, REST, WebSocket.
+- **Data:** PostgreSQL; H2 for local and test scenarios.
+- **Schema changes:** Flyway.
+- **Tools:** Maven Wrapper, npm, Git, automated tests.
+- **Authentication:** JWT and backend roles/permissions.
 
 ## Current status
 
-This is an active development project. Production deployment configuration and full test verification remain in progress, and some test failures still need to be resolved before a production release. This case study describes the current project scope; it does not claim a production-ready release.
+This project is in active development. Production deployment configuration and full test verification remain in progress, and some test failures need to be resolved before a production release.
 
 ## Screenshots
 
-Screenshots will be added later. They will use synthetic or anonymized data and will be reviewed to avoid exposing private customer, order, or business information.
+Screenshots will be added later using synthetic or anonymized data. They will be checked to avoid exposing private customer, order, or business information.
 
-## Privacy boundary
+## Privacy
 
-The original source repository is private. This public case study is a product and engineering overview, not a copy of that repository. It excludes source files, secrets, private endpoints, deployment configuration, real customer records, and internal business data.
+The original source repository is private. This case study shares selected names and high-level responsibilities only. It does not include code, credentials, private endpoints, deployment configuration, real customer records, or internal business data.
